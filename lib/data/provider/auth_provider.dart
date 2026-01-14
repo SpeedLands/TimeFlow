@@ -15,10 +15,15 @@ class AuthProviderLocal extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    var currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      _fetchUserData(currentUser.uid);
-    }
+    // El listener de authStateChanges se convierte en la única fuente de verdad
+    // para el estado de autenticación del usuario.
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user != null) {
+        _fetchUserData(user.uid);
+      } else {
+        userData.value = null;
+      }
+    });
   }
 
   Future<void> _fetchUserData(String uid) async {

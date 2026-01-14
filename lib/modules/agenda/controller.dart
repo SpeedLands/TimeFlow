@@ -5,13 +5,11 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:timeflow/data/model/agenda_model.dart';
 import 'package:timeflow/data/provider/event_provider.dart';
 
-class AgendaController extends GetxController with GetTickerProviderStateMixin {
-  // --- Animación para el desplegable de meses en AppBar (si lo usas) ---
-  late AnimationController iconRotationController;
-  RxBool mostrarMesesDropdown = false.obs;
-
-  final EventProvider _eventProvider = Get.find<EventProvider>();
+class AgendaController extends GetxController {
+  final EventProvider _eventProvider;
   var allFetchedEvents = RxList<Event>([]);
+
+  AgendaController(this._eventProvider);
 
   var searchResults = RxList<Event>([]); // Para los resultados de búsqueda
   var isSearching =
@@ -35,26 +33,10 @@ class AgendaController extends GetxController with GetTickerProviderStateMixin {
   @override
   void onInit() {
     super.onInit();
-    iconRotationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
     // Inicializa mesSeleccionadoNombre basado en el focusDay inicial
     updateMesSeleccionadoNombre(focusDay.value);
     selectedDay.value = DateTime.now(); // Seleccionar hoy por defecto
     _listenToEvents(); // Escuchar eventos desde el provider
-    // _loadSampleEvents(); // Si tienes eventos de ejemplo
-    // print('Controller inicializado. FocusDay: ${focusDay.value}');
-  }
-
-  // --- Métodos para la UI ---
-  void toggleMesesDropdown() {
-    mostrarMesesDropdown.value = !mostrarMesesDropdown.value;
-    if (mostrarMesesDropdown.value) {
-      iconRotationController.forward();
-    } else {
-      iconRotationController.reverse();
-    }
   }
 
   void _listenToEvents() {
@@ -136,39 +118,32 @@ class AgendaController extends GetxController with GetTickerProviderStateMixin {
   void _updateCalendarEventsMap(List<Event> eventList) {
     events.clear();
     for (var event in eventList) {
+      // Guarda para evitar errores si un evento tiene una fecha de fin anterior a la de inicio.
+      if (event.endTime.isBefore(event.startTime)) {
+        continue; // Omite este evento y continúa con el siguiente.
+      }
+
       DateTime currentDate = event.startTime;
-      // Itera desde el inicio hasta el final del evento (inclusive)
-      while (!currentDate.isAfter(event.endTime)) {
-        final dayKey = DateTime(
-          currentDate.year,
-          currentDate.month,
-          currentDate.day,
-        );
-        if (events[dayKey] == null) {
-          events[dayKey] = [];
-        }
-        // Evita añadir duplicados al mismo día si el stream emite múltiples veces con los mismos datos
-        // (Mejor usar el ID del evento si ya lo tienes en el modelo)
+      // Itera desde el inicio hasta el final del evento.
+      while (true) {
+        final dayKey = DateTime(currentDate.year, currentDate.month, currentDate.day);
+
+        // Asegura que la lista de eventos para el día exista.
+        events.putIfAbsent(dayKey, () => []);
+
+        // Añade el evento solo si no existe ya en la lista para ese día.
         if (!events[dayKey]!.any((e) => e.id == event.id)) {
           events[dayKey]!.add(event);
         }
-        currentDate = currentDate.add(const Duration(days: 1));
-        // Si el evento es de día completo y endTime es 00:00 del día siguiente,
-        // y no quieres que aparezca en ese día siguiente, ajusta la condición del while.
-        // Por ejemplo: while (currentDate.isBefore(event.endTime) || isSameDay(currentDate, event.endTime))
-        // y si endTime es 00:00 del día siguiente, podrías hacer event.endTime.subtract(Duration(seconds:1))
-        // para la comparación.
-        // La forma más simple es que si un evento termina a las 00:00, considerarlo hasta el día anterior.
-        // La lógica actual incluye el día de endTime si la hora no es 00:00:00.
-        // Si endTime es, por ejemplo, 23:59:59 del mismo día, solo se agregará una vez.
-        // Si endTime es el día siguiente a las 10:00, se agregará al día de inicio y al de fin.
 
-        // Pequeña salvaguarda para evitar bucles infinitos si startTime y endTime son idénticos
-        // y el evento no avanza. Si el evento dura menos de un día, solo se procesa una vez.
-        if (isSameDay(event.startTime, event.endTime) &&
-            event.startTime.isAtSameMomentAs(event.endTime)) {
+        // Si el día actual es el mismo que el día de finalización,
+        // hemos terminado con este evento, así que salimos del bucle.
+        if (isSameDay(currentDate, event.endTime)) {
           break;
         }
+
+        // Pasa al día siguiente.
+        currentDate = currentDate.add(const Duration(days: 1));
       }
     }
   }
@@ -386,11 +361,6 @@ class AgendaController extends GetxController with GetTickerProviderStateMixin {
   // void _loadSampleEvents() { ... } // Tu lógica para cargar eventos
   // void addEvent(Event newEvent) { ... } // Tu lógica para añadir eventos
 
-  @override
-  void onClose() {
-    iconRotationController.dispose();
-    super.onClose();
-  }
 }
 
 // Extensión para capitalizar
