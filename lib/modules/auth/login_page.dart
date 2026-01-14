@@ -1,6 +1,7 @@
 import "package:timeflow/modules/auth/controller.dart";
 import "package:flutter/material.dart";
 import "package:get/get.dart";
+import 'widgets/auth_visual_panel.dart';
 
 class LoginPage extends StatelessWidget {
   final AuthController authController = Get.find<AuthController>();
@@ -47,35 +48,11 @@ class LoginPage extends StatelessWidget {
     return Row(
       children: [
         // Sección visual izquierda
-        Expanded(
-          child: Container(
-            color: colorScheme.surface,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.calendar_month,
-                    size: 130,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "TimeFlow",
-                    style: textTheme.headlineLarge?.copyWith(
-                      color: colorScheme.primary,
-                      fontSize: 42,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Organiza tu tiempo, sin esfuerzo.",
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
+        const Expanded(
+          child: AuthVisualPanel(
+            icon: Icons.calendar_month,
+            title: "TimeFlow",
+            subtitle: "Organiza tu tiempo, sin esfuerzo.",
           ),
         ),
 
@@ -157,12 +134,23 @@ class LoginPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      authController.login(
-                        emailController.text.trim(),
-                        passwordController.text.trim(),
-                      );
+                      try {
+                        await authController.login(
+                          emailController.text.trim(),
+                          passwordController.text.trim(),
+                        );
+                        Get.offAllNamed("/home"); // Navega a home en éxito
+                      } catch (e) {
+                        Get.snackbar(
+                          "Error de autenticación",
+                          e.toString().replaceFirst("Exception: ", ""),
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: colorScheme.error,
+                          colorText: colorScheme.onError,
+                        );
+                      }
                     }
                   },
                   child: const Text("Iniciar Sesión"),
@@ -212,16 +200,24 @@ class LoginPage extends StatelessWidget {
             child: const Text("Cancelar"),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (resetEmailController.text.isNotEmpty) {
                 if (RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(resetEmailController.text.trim())) {
-                  authController.resetPassword(resetEmailController.text.trim());
-                  Get.back();
-                  Get.snackbar(
-                    "Solicitud Enviada",
-                    "Si el correo está registrado, recibirás un enlace.",
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
+                  try {
+                    await authController.resetPassword(resetEmailController.text.trim());
+                    Get.back();
+                    Get.snackbar(
+                      "Solicitud Enviada",
+                      "Si el correo está registrado, recibirás un enlace.",
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  } catch (e) {
+                    Get.snackbar(
+                      "Error",
+                      e.toString().replaceFirst("Exception: ", ""),
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
                 } else {
                   Get.snackbar(
                     "Error",

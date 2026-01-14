@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:get/get.dart";
 import "package:timeflow/data/model/user_model.dart";
 import "package:timeflow/modules/auth/controller.dart";
+import "widgets/auth_visual_panel.dart";
 
 class SignupPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -63,35 +64,11 @@ class SignupPage extends StatelessWidget {
     return Row(
       children: [
         // Sección visual izquierda
-        Expanded(
-          child: Container(
-            color: colorScheme.surface,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.person_add_alt_1,
-                    size: 130,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Únete a TimeFlow",
-                    style: textTheme.headlineLarge?.copyWith(
-                      color: colorScheme.primary,
-                      fontSize: 42,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Regístrate para organizar tu tiempo.",
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
+        const Expanded(
+          child: AuthVisualPanel(
+            icon: Icons.person_add_alt_1,
+            title: "Únete a TimeFlow",
+            subtitle: "Regístrate para organizar tu tiempo.",
           ),
         ),
 
@@ -191,16 +168,32 @@ class SignupPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      controller.register(
-                        emailController.text.trim(),
-                        passwordController.text.trim(),
-                        UserData(
-                          uid: "",
-                          email: emailController.text.trim(),
-                        ),
-                      );
+                      try {
+                        await controller.register(
+                          emailController.text.trim(),
+                          passwordController.text.trim(),
+                          UserData(
+                            uid: "",
+                            email: emailController.text.trim(),
+                          ),
+                        );
+                        Get.snackbar(
+                          "Registro Exitoso",
+                          "Se ha enviado un correo de verificación.",
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        Get.offAllNamed("/login"); // Vuelve a login para que inicie sesión
+                      } catch (e) {
+                        Get.snackbar(
+                          "Error de registro",
+                          e.toString().replaceFirst("Exception: ", ""),
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: colorScheme.error,
+                          colorText: colorScheme.onError,
+                        );
+                      }
                     }
                   },
                   child: const Text("Registrarse"),

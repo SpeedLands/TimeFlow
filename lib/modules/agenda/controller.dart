@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:timeflow/core/utils/date_helpers.dart';
 import 'package:timeflow/data/model/agenda_model.dart';
 import 'package:timeflow/data/provider/event_provider.dart';
 
@@ -254,102 +255,27 @@ class AgendaController extends GetxController {
   void seleccionarMesDesdeDropdown(String nombreMes) {
     final locale = Get.locale?.languageCode ?? 'es';
     int mesIndex = 1;
-    final nombresMesesLocale = obtenerTodosLosNombresDeMeses(locale);
-    mesIndex =
-        nombresMesesLocale.indexWhere(
-          (m) => m.toLowerCase() == nombreMes.toLowerCase(),
-        ) +
-        1;
+    final nombresMesesLocale = getAllMonthNames(locale: locale);
+    mesIndex = nombresMesesLocale.indexWhere((m) => m.toLowerCase() == nombreMes.toLowerCase()) + 1;
 
     if (mesIndex == 0) {
-      // print("Error: Mes '$nombreMes' no reconocido para locale '$locale'.");
       return;
     }
 
     DateTime nuevaFecha = DateTime(focusDay.value.year, mesIndex, 1);
     int diaAUsar = focusDay.value.day;
-    if (diaAUsar > _diasEnMes(nuevaFecha.year, nuevaFecha.month)) {
-      diaAUsar = _diasEnMes(nuevaFecha.year, nuevaFecha.month);
+    if (diaAUsar > daysInMonth(nuevaFecha.year, nuevaFecha.month)) {
+      diaAUsar = daysInMonth(nuevaFecha.year, nuevaFecha.month);
     }
     nuevaFecha = DateTime(focusDay.value.year, mesIndex, diaAUsar);
 
     focusDay.value = nuevaFecha;
     updateMesSeleccionadoNombre(nuevaFecha);
-
-    if (mostrarMesesDropdown.value) {
-      toggleMesesDropdown();
-    }
-    // print(
-    //   'Mes seleccionado desde dropdown: $nombreMes, Nueva fecha enfocada: $nuevaFecha',
-    // );
   }
 
   void updateMesSeleccionadoNombre(DateTime date) {
     mesSeleccionadoNombre.value =
-        StringExtension(
-          DateFormat.MMMM(Get.locale?.languageCode ?? 'es').format(date),
-        ).capitalizeFirst();
-  }
-
-  // Helper para obtener el número de días en un mes
-  int _diasEnMes(int year, int month) {
-    if (month == DateTime.february) {
-      final bool esBisiesto =
-          (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
-      return esBisiesto ? 29 : 28;
-    }
-    const List<int> diasPorMes = <int>[
-      0,
-      31,
-      -1,
-      31,
-      30,
-      31,
-      30,
-      31,
-      31,
-      30,
-      31,
-      30,
-      31,
-    ];
-    return diasPorMes[month];
-  }
-
-  // --- Helpers ---
-  List<String> obtenerTodosLosNombresDeMeses(String locale) {
-    List<String> meses = [];
-    var typicalYearDate = DateTime(2000);
-    for (int i = 1; i <= 12; i++) {
-      try {
-        final monthDate = DateTime(typicalYearDate.year, i);
-        meses.add(
-          StringExtension(
-            DateFormat.MMMM(locale).format(monthDate),
-          ).capitalizeFirst(),
-        );
-      } catch (e) {
-        // print(
-        //   "Error formateando mes $i para locale $locale: $e. Usando fallback.",
-        // );
-        const nombresMesesEs = [
-          'Enero',
-          'Febrero',
-          'Marzo',
-          'Abril',
-          'Mayo',
-          'Junio',
-          'Julio',
-          'Agosto',
-          'Septiembre',
-          'Octubre',
-          'Noviembre',
-          'Diciembre',
-        ];
-        meses.add(nombresMesesEs[i - 1]);
-      }
-    }
-    return meses;
+        DateFormat.MMMM(Get.locale?.languageCode ?? 'es').format(date).capitalizeFirst();
   }
 
   // --- Eventos (si los usas) ---
@@ -361,12 +287,4 @@ class AgendaController extends GetxController {
   // void _loadSampleEvents() { ... } // Tu lógica para cargar eventos
   // void addEvent(Event newEvent) { ... } // Tu lógica para añadir eventos
 
-}
-
-// Extensión para capitalizar
-extension StringExtension on String {
-  String capitalizeFirst() {
-    if (isEmpty) return "";
-    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
-  }
 }
