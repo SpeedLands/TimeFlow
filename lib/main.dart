@@ -7,6 +7,7 @@ import 'package:timeflow/data/provider/event_provider.dart';
 import 'package:timeflow/data/services/auth_service.dart';
 import 'package:timeflow/data/services/firestore_service.dart';
 import 'package:timeflow/modules/agenda/controller.dart';
+import 'package:timeflow/global/app_theme.dart';
 import 'package:timeflow/modules/auth/controller.dart';
 import 'package:timeflow/routes/app_pages.dart';
 import 'firebase_options.dart';
@@ -54,19 +55,9 @@ class MainApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-      ),
-      themeMode: ThemeMode.light,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Usa el tema del sistema (claro u oscuro)
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
       // initialBinding ya no es necesario si todo se inicializa en main()
