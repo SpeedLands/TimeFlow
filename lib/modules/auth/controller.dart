@@ -4,38 +4,25 @@ import "package:get/get.dart";
 import "package:firebase_auth/firebase_auth.dart";
 
 class AuthController extends GetxController {
-  final AuthProviderLocal _authProvider = Get.find();
-  final Rx<UserData?> userData = Rx<UserData?>(
-    null,
-  ); // Estado reactivo del usuario
+  final AuthProviderLocal _authProvider = Get.find<AuthProviderLocal>();
+  // userData ahora es un reflejo reactivo del estado en AuthProviderLocal.
+  // No necesita ser inicializado aquí, ya que se vinculará en onInit.
+  final Rx<UserData?> userData = Rx<UserData?>(null);
   var failedAttempts = [false, false, false];
 
   @override
-  void onReady() {
-    super.onReady();
-    _checkAuthState(); // Verifica el estado de autenticación cuando el controlador esté listo
-  }
-
-  /// ✅ Verifica el estado de autenticación
-  void _checkAuthState() {
-    FirebaseAuth.instance.authStateChanges().listen((User? user) async {
-      if (user != null) {
-        await _authProvider
-            .loadUserData(); // Obtiene los datos del usuario desde Firestore
-        userData.value = _authProvider.userData.value; // Actualiza userData
-
-        // print("Usuario autenticado: ${userData.value?.email}");
-      } else {
-        userData.value = null; // Si el usuario cierra sesión, resetea los datos
-        // print("Cerró sesión");
-      }
-    });
+  void onInit() {
+    super.onInit();
+    // Enlaza el userData de este controlador al userData del proveedor.
+    // Cada vez que el userData del proveedor cambie, el de este controlador
+    // también lo hará, manteniendo la UI actualizada.
+    userData.bindStream(_authProvider.userData.stream);
   }
 
   void login(String email, String password) async {
+    // El estado de userData se actualizará automáticamente a través del
+    // listener en AuthProviderLocal.
     await _authProvider.login(email, password);
-    userData.value =
-        _authProvider.userData.value; // Asegurar que userData se actualiza
   }
 
   void register(String email, String password, UserData userModel) {
@@ -43,8 +30,9 @@ class AuthController extends GetxController {
   }
 
   void logout() {
+    // El estado de userData se actualizará a null automáticamente
+    // a través del listener en AuthProviderLocal.
     _authProvider.logout();
-    userData.value = null; // Resetear userData al cerrar sesión
   }
 
   void resetPassword(String email) {

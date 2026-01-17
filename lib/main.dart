@@ -3,9 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:timeflow/data/provider/auth_provider.dart';
+import 'package:timeflow/data/provider/event_provider.dart';
 import 'package:timeflow/data/services/auth_service.dart';
 import 'package:timeflow/data/services/firestore_service.dart';
 import 'package:timeflow/modules/agenda/controller.dart';
+import 'package:timeflow/global/app_theme.dart';
 import 'package:timeflow/modules/auth/controller.dart';
 import 'package:timeflow/routes/app_pages.dart';
 import 'firebase_options.dart';
@@ -18,12 +20,23 @@ void main() async {
   // Inicializar Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  Get.lazyPut(() => AgendaController());
-  Get.lazyPut(() => AuthController());
-  Get.lazyPut(() => AuthService(Get.find()));
+  // 1. Inicializa los servicios principales
   Get.lazyPut(() => FirestoreService());
 
-  initializeDateFormatting('es_ES', null).then((_) => runApp(MainApp()));
+  // 2. Inicializa los proveedores que dependen de los servicios
+  Get.lazyPut(() => AuthProviderLocal(Get.find<FirestoreService>()));
+
+  // 3. Inicializa los servicios que dependen de los proveedores
+  Get.lazyPut(() => AuthService(Get.find<AuthProviderLocal>()));
+  Get.lazyPut(() => EventProvider(Get.find<FirestoreService>()));
+
+
+  // 4. Inicializa los controladores
+  Get.lazyPut(() => AgendaController(Get.find<EventProvider>()));
+  Get.lazyPut(() => AuthController());
+
+
+  initializeDateFormatting('es_ES', null).then((_) => runApp(const MainApp()));
 }
 
 class MainApp extends StatelessWidget {
@@ -31,46 +44,23 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Es importante inicializar los formatos de fecha para 'es_ES'
-    // Idealmente en tu `main()` async:
-    // void main() async {
-    //   WidgetsFlutterBinding.ensureInitialized();
-    //   await initializeDateFormatting('es_ES', null); // Asegúrate de importar 'package:intl/date_symbol_data_local.dart';
-    //   runApp(MainApp());
-    // }
     return GetMaterialApp(
       title: 'TimeFlow Calendario',
-      translations: null, // Si tienes traducciones, configúralas aquí
+      translations: null,
       debugShowCheckedModeBanner: false,
-      locale: Locale('es', 'ES'),
-      fallbackLocale: const Locale('es', 'ES'), // Idioma por defecto
+      locale: const Locale('es', 'ES'),
+      fallbackLocale: const Locale('es', 'ES'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        // Define un tema base
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        // Puedes personalizar más aspectos del tema aquí
-      ),
-      darkTheme: ThemeData(
-        // Tema oscuro opcional
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-      ),
-      themeMode: ThemeMode.light, // Usar tema del sistema
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Usa el tema del sistema (claro u oscuro)
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
-      initialBinding: BindingsBuilder(() {
-        Get.put(AuthProviderLocal(Get.find()));
-        Get.put(AuthController());
-      }),
+      // initialBinding ya no es necesario si todo se inicializa en main()
       // No necesitas Get.put(AgendaController()) aquí si ya lo haces en CalendarScreen
       // o si CalendarScreen usa GetView<AgendaController> que lo manejaría automáticamente.
       // Si necesitas el controlador a nivel de app, puedes ponerlo aquí:

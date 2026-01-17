@@ -15,10 +15,15 @@ class AuthProviderLocal extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    var currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      _fetchUserData(currentUser.uid);
-    }
+    // El listener de authStateChanges se convierte en la única fuente de verdad
+    // para el estado de autenticación del usuario.
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user != null) {
+        _fetchUserData(user.uid);
+      } else {
+        userData.value = null;
+      }
+    });
   }
 
   Future<void> _fetchUserData(String uid) async {
@@ -31,11 +36,8 @@ class AuthProviderLocal extends GetxController {
         userData.value = UserData(uid: uid, email: "");
       }
     } catch (e) {
-      Get.snackbar(
-        "Error",
-        "No se pudo obtener los datos del usuario",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Lanza una excepción para que la UI pueda manejarla si es necesario
+      throw Exception("No se pudo obtener los datos del usuario");
     }
   }
 
@@ -52,81 +54,55 @@ class AuthProviderLocal extends GetxController {
       );
       if (user != null) {
         userData.value = user;
-        await _authService
-            .sendEmailVerification(); // Enviar verificación de email
-        Get.snackbar(
-          "Registro Exitoso",
-          "Se ha enviado un correo de verificación. Por favor, revisa tu bandeja de entrada.",
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        await _authService.sendEmailVerification();
       }
     } catch (e) {
-      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      // Lanza la excepción para que la UI pueda manejarla
+      throw Exception(e.toString());
     }
   }
 
   Future<void> login(String email, String password) async {
     if (isLocked.value) {
-      Get.snackbar(
-        "Acceso bloqueado",
-        "Has excedido el número de intentos. Intenta más tarde.",
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
+      throw Exception("Acceso bloqueado. Has excedido el número de intentos.");
     }
 
     try {
       UserData? user = await _authService.login(email, password);
       if (user != null) {
         userData.value = user;
-        failedAttempts.value =
-            0; // Reiniciar el contador si el login es exitoso
-        Get.toNamed("/home");
+        failedAttempts.value = 0; // Reiniciar el contador en éxito
       }
     } catch (e) {
-      failedAttempts.value += 1; // Aumentar el contador de fallos
-      Get.snackbar(
-        "Error",
-        "Credenciales incorrectas (${failedAttempts.value}/$maxAttempts)",
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
+      failedAttempts.value += 1;
       if (failedAttempts.value >= maxAttempts) {
-        isLocked.value = true; // Bloquear el acceso
-        Get.snackbar(
-          "Acceso bloqueado",
-          "Demasiados intentos fallidos. Intenta más tarde.",
-          snackPosition: SnackPosition.BOTTOM,
-        );
-
-        // Opcional: desbloqueo automático después de un tiempo
-        Future.delayed(Duration(minutes: 5), () {
+        isLocked.value = true;
+        // Opcional: Desbloqueo automático después de un tiempo
+        Future.delayed(const Duration(minutes: 5), () {
           failedAttempts.value = 0;
           isLocked.value = false;
         });
+        throw Exception("Acceso bloqueado. Demasiados intentos fallidos.");
       }
+      // Lanza una excepción más informativa para la UI
+      throw Exception("Credenciales incorrectas (${failedAttempts.value}/$maxAttempts)");
     }
   }
 
   Future<void> logout() async {
     try {
       await _authService.logout();
-      userData.value = null; // Restablecer los datos del usuario
+      userData.value = null;
     } catch (e) {
-      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      throw Exception(e.toString());
     }
   }
 
   Future<void> resetPassword(String email) async {
     try {
       await _authService.resetPassword(email);
-      Get.snackbar(
-        "Correo Enviado",
-        "Se ha enviado un enlace para restablecer tu contraseña.",
-        snackPosition: SnackPosition.BOTTOM,
-      );
     } catch (e) {
-      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      throw Exception(e.toString());
     }
   }
 

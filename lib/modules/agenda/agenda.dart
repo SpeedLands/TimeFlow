@@ -5,10 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:timeflow/data/model/agenda_model.dart';
 import 'package:timeflow/global/custom_appbar.dart';
-import 'package:timeflow/global/custom_mes.dart';
 import 'package:timeflow/global/custom_sidebar.dart';
-import 'package:timeflow/global/custom_text.dart';
 import 'package:timeflow/modules/agenda/controller.dart';
+import 'package:timeflow/modules/agenda/widgets/month_selector_widget.dart';
 
 class CalendarScreen extends StatelessWidget {
   CalendarScreen({super.key});
@@ -83,7 +82,7 @@ class CalendarScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        MesesToggleGetXWidget(), // Este widget debe interactuar con controller.focusDay
+        const MonthSelectorWidget(), // Reemplazado
         const SizedBox(height: 16.0),
         Obx(() {
           // Obx para reaccionar a cambios en focusDay, selectedDay, events
@@ -142,18 +141,11 @@ class CalendarScreen extends StatelessWidget {
                 },
                 calendarBuilders: CalendarBuilders(
                   dowBuilder: (context, day) {
-                    final text = DateFormat.E(
-                      Get.locale?.languageCode ?? 'es',
-                    ).format(day); // E para nombre corto (Lun, Mar)
+                    final text = DateFormat.E(Get.locale?.languageCode ?? 'es').format(day);
                     return Center(
-                      child: CustomText(
-                        text:
-                            text[0].toUpperCase() +
-                            (text.length > 1
-                                ? text.substring(1, min(text.length, 3))
-                                : ""), // Ej: Lun, Mar
-                        type: CustomTextType.subtitulo,
-                        // style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      child: Text(
+                        text.substring(0, min(text.length, 3)).capitalizeFirst(),
+                        style: theme.textTheme.bodySmall,
                       ),
                     );
                   },
@@ -266,10 +258,8 @@ class CalendarScreen extends StatelessWidget {
         shape: BoxShape.circle,
         color:
             events.length > 1
-                ? Colors.orange
-                : theme
-                    .colorScheme
-                    .secondary, // Color diferente si hay múltiples eventos
+                ? theme.colorScheme.tertiary
+                : theme.colorScheme.secondary,
       ),
       width: 16.0,
       height: 16.0,
@@ -293,9 +283,9 @@ class CalendarScreen extends StatelessWidget {
       child: Obx(() {
         if (controller.selectedDay.value == null) {
           return Center(
-            child: CustomText(
-              text: "Selecciona un día para ver los eventos",
-              type: CustomTextType.subtitulo,
+            child: Text(
+              "Selecciona un día para ver los eventos",
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           );
         }
@@ -305,16 +295,15 @@ class CalendarScreen extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomText(
-              text:
-                  "Eventos para ${DateFormat.yMMMMEEEEd('es').format(controller.selectedDay.value!)}",
-              type: CustomTextType.titulo,
+            Text(
+              "Eventos para ${DateFormat.yMMMMEEEEd('es').format(controller.selectedDay.value!)}",
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16.0),
             if (selectedEvents.isEmpty)
-              CustomText(
-                text: "No hay eventos para este día.",
-                type: CustomTextType.parrafo,
+              Text(
+                "No hay eventos para este día.",
+                style: Theme.of(context).textTheme.bodyMedium,
               )
             else
               Expanded(
@@ -401,18 +390,17 @@ class CalendarScreen extends StatelessWidget {
                           backgroundColor: event.color,
                           child: Text(
                             event.title[0].toUpperCase(),
-                            style: TextStyle(color: Colors.white),
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
-                        title: CustomText(
-                          text: event.title,
-                          type: CustomTextType.subtitulo,
+                        title: Text(
+                          event.title,
+                          style: Theme.of(context).textTheme.titleMedium,
                           maxLines: 2,
                         ),
-                        subtitle: CustomText(
-                          text:
-                              "${DateFormat.Hm('es').format(event.startTime)} - ${DateFormat.Hm('es').format(event.endTime)}\n${event.description ?? ''}",
-                          type: CustomTextType.parrafo,
+                        subtitle: Text(
+                          "${DateFormat.Hm('es').format(event.startTime)} - ${DateFormat.Hm('es').format(event.endTime)}\n${event.description ?? ''}",
+                          style: Theme.of(context).textTheme.bodyMedium,
                           maxLines: 3,
                         ),
                         trailing: trailingActions,
@@ -453,16 +441,15 @@ class CalendarScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CustomText(
-                text:
-                    "Eventos para ${DateFormat.yMMMMEEEEd('es').format(controller.selectedDay.value!)}",
-                type: CustomTextType.titulo,
+              Text(
+                "Eventos para ${DateFormat.yMMMMEEEEd('es').format(controller.selectedDay.value!)}",
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               if (selectedEvents.isEmpty)
-                CustomText(
-                  text: "No hay eventos para este día.",
-                  type: CustomTextType.parrafo,
+                Text(
+                  "No hay eventos para este día.",
+                  style: Theme.of(context).textTheme.bodyMedium,
                 )
               else
                 ListView.builder(
@@ -480,17 +467,16 @@ class CalendarScreen extends StatelessWidget {
                           backgroundColor: event.color,
                           child: Text(
                             event.title[0].toUpperCase(),
-                            style: TextStyle(color: Colors.white),
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
-                        title: CustomText(
-                          text: event.title,
-                          type: CustomTextType.subtitulo,
+                        title: Text(
+                          event.title,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        subtitle: CustomText(
-                          text:
-                              "${DateFormat.Hm('es').format(event.startTime)} - ${DateFormat.Hm('es').format(event.endTime)}\n${event.description ?? ''}",
-                          type: CustomTextType.parrafo,
+                        subtitle: Text(
+                          "${DateFormat.Hm('es').format(event.startTime)} - ${DateFormat.Hm('es').format(event.endTime)}\n${event.description ?? ''}",
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -883,8 +869,6 @@ class CalendarScreen extends StatelessWidget {
                 "Error de Horas",
                 "La hora de fin debe ser posterior a la hora de inicio.",
                 snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.red,
-                colorText: Colors.white,
               );
               return;
             }
@@ -1331,10 +1315,10 @@ class CalendarScreen extends StatelessWidget {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent, // Color de fondo del botón
-            foregroundColor: Colors.white, // Color del texto del botón
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
           ),
-          child: Text("Eliminar", style: TextStyle(fontSize: 16)),
+          child: const Text("Eliminar"),
           onPressed: () {
             if (eventToDelete.id == null || eventToDelete.id!.isEmpty) {
               Get.back(); // Cierra el diálogo
@@ -1362,19 +1346,3 @@ class CalendarScreen extends StatelessWidget {
     );
   }
 }
-
-// Extensión para capitalizar (si no la tienes ya en tu controller o globalmente)
-// extension StringExtension on String {
-//   String capitalizeFirst() {
-//     if (isEmpty) return "";
-//     return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
-//   }
-// }
-
-// Necesitarás esta función si no está definida globalmente o en TableCalendar
-// bool isSameDay(DateTime? a, DateTime? b) {
-//   if (a == null || b == null) {
-//     return false;
-//   }
-//   return a.year == b.year && a.month == b.month && a.day == b.day;
-// }
